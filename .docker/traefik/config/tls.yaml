@@ -1,0 +1,11 @@
+tls:
+  certificates:
+    - certFile: /certs/_.traefik.localhost/cert.pem
+      keyFile: /certs/_.traefik.localhost/key.pem
+      stores:
+        - default
+    - certFile: /certs/_.mongodb.localhost/cert.pem
+      keyFile: /certs/_.mongodb.localhost/key.pem
+
+  stores:
+    default: {}

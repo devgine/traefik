@@ -1,0 +1,61 @@
+version: '3.8'
+
+# @see https://kevinquillen.com/setting-traefik-2-local-ssl-certificate
+services:
+  traefik:
+    container_name: ${PROJECT_NAME}-traefik
+    image: traefik:v2.10.5
+    restart: always
+    depends_on:
+      tls:
+        condition: service_completed_successfully
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.file
+      - --providers.file.directory=/etc/traefik/dynamic_conf
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.mongodb.address=:27017
+      - --api
+      - --accesslog
+      - --log
+      - --api.dashboard=true
+    ports:
+      - "80:80"
+      - "443:443"
+      - "27017:27017"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./.docker/certs:/certs:ro
+      - ./.docker/traefik/config/tls.yaml:/etc/traefik/dynamic_conf/tls.yaml:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-network
+      - traefik.http.middlewares.traefik-public-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.traefik-public-https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.traefik-public-http.rule=Host(`dashboard.$BASE_URL`)
+      - traefik.http.routers.traefik-public-http.entrypoints=web
+      - traefik.http.routers.traefik-public-http.middlewares=traefik-public-https-redirect
+      - traefik.http.routers.traefik-public-https.rule=Host(`dashboard.$BASE_URL`)
+      - traefik.http.routers.traefik-public-https.entrypoints=websecure
+      - traefik.http.routers.traefik-public-https.tls=true
+      - traefik.http.routers.traefik-public-https.service=api@internal
+      - traefik.http.services.traefik-public.loadbalancer.server.port=8080
+    networks:
+      - traefik-network
+
+  tls:
+    container_name: ${PROJECT_NAME}-tls
+    build:
+      context: .docker/tls
+    command:
+      - -d
+      - ${BASE_URL}
+    volumes:
+      - ./.docker/certs:/certs
+
+networks:
+  traefik-network:
+    external: true
+    name: traefik-network
