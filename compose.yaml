@@ -31,11 +31,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=${TRAEFIK_NETWORK}
-      - traefik.http.routers.traefik-public-https.rule=Host(`dashboard.$BASE_URL`)
-      - traefik.http.routers.traefik-public-https.entrypoints=websecure
-      - traefik.http.routers.traefik-public-https.tls=true
-      - traefik.http.routers.traefik-public-https.service=api@internal
-      - traefik.http.services.traefik-public.loadbalancer.server.port=8080
+      - traefik.http.routers.${PROJECT_NAME}-traefik-https.rule=Host(`dashboard.$BASE_URL`)
+      - traefik.http.routers.${PROJECT_NAME}-traefik-https.entrypoints=websecure
+      - traefik.http.routers.${PROJECT_NAME}-traefik-https.tls=true
+      - traefik.http.routers.${PROJECT_NAME}-traefik-https.service=api@internal
+      - traefik.http.services.${PROJECT_NAME}-traefik-loadbalancer.loadbalancer.server.port=8080
     networks:
       - traefik-network
 
