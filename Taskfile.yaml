@@ -1,0 +1,121 @@
+# https://taskfile.dev
+version: '3'
+
+dotenv: ['.env', '.env.local']
+
+tasks:
+  _compose:
+    internal: true
+    preconditions:
+      - sh: test -f compose.yaml
+        msg: "compose.yaml file doesn't exists"
+      - sh: docker compose config --quiet && exit 0 || exit 1
+        msg: "composer.yaml hasn't a valid yaml format"
+    cmds:
+      - docker compose {{.COMPOSE_ARGS}} {{.CLI_ARGS}}
+    requires:
+      vars: [ COMPOSE_ARGS ]
+
+  _init:
+    internal: true
+    desc: Init docker networks
+    cmds:
+      - docker network create {{.TRAEFIK_NETWORK}} || true
+    requires:
+      vars: [ TRAEFIK_NETWORK ]
+
+  default:
+    silent: true
+    cmds:
+      - echo "Welcome to {{.PROJECT_NAME}} project !"
+      - task -l
+
+  config:
+    desc: Display the manifest (Display manifest for a specific container "task config -- service_name")
+    label: task config -- service_name
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: config
+
+  down:
+    desc: Remove containers and networks (Down a specific container with "task down -- service_name")
+    label: task down -- service_name
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: down
+
+  down-v:
+    desc: Remove containers, networks and volumes (Down specific container with "task down-v -- service_name")
+    label: task down-v -- service_name
+    prompt: This command will erase volumes. Do you want to continue ?
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: down -v
+
+  logs:
+    desc: Display container logs (Display logs of a specific container with "task logs -- service_name")
+    label: task logs -- service_name
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: logs -n 20
+
+  ps:
+    desc: Display list of containers (Display only a specific container "task ps -- service_name")
+    label: task ps -- service_name
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: ps -a
+
+  restart:
+    desc: Restart containers (Restart a specific container "task restart -- service_name")
+    label: task ps -- service_name
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: restart
+
+  shell:
+    desc: Connect to traefik container
+    label: task shell
+    vars:
+      TRAEFIK_CONTAINER_HASH:
+        sh: docker compose ps -q traefik
+    preconditions:
+      - sh: test {{.TRAEFIK_CONTAINER_HASH}} != ''
+        msg: "traefik is not running"
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: exec traefik sh
+
+  start:
+    desc: Start containers (Restart specific container with "task start -- service_name")
+    label: task start
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: start
+
+  stop:
+    desc: Stop containers (Stop a specific containers with "task stop -- service_name")
+    label: task stop
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: stop
+
+  up:
+    dir: '{{.USER_WORKING_DIR}}'
+    desc: Create and start containers (Up a specific containers with "task up -- service_name")
+    label: task up
+    deps:
+      - _init
+    cmds:
+      - task: _compose
+        vars:
+          COMPOSE_ARGS: up -d --build --remove-orphans --force-recreate

@@ -1,5 +1,3 @@
-version: '3.8'
-
 # @see https://kevinquillen.com/setting-traefik-2-local-ssl-certificate
 services:
   traefik:
@@ -10,6 +8,9 @@ services:
       tls:
         condition: service_completed_successfully
     command:
+      - --api.insecure=true
+      - --accesslog=true
+      - --log.level=DEBUG
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --providers.file
@@ -17,10 +18,8 @@ services:
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --entrypoints.mongodb.address=:27017
-      - --api
-      - --accesslog
-      - --log
-      - --api.dashboard=true
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
     ports:
       - "80:80"
       - "443:443"
@@ -31,12 +30,7 @@ services:
       - ./.docker/traefik/config/tls.yaml:/etc/traefik/dynamic_conf/tls.yaml:ro
     labels:
       - traefik.enable=true
-      - traefik.docker.network=traefik-network
-      - traefik.http.middlewares.traefik-public-https-redirect.redirectscheme.scheme=https
-      - traefik.http.middlewares.traefik-public-https-redirect.redirectscheme.permanent=true
-      - traefik.http.routers.traefik-public-http.rule=Host(`dashboard.$BASE_URL`)
-      - traefik.http.routers.traefik-public-http.entrypoints=web
-      - traefik.http.routers.traefik-public-http.middlewares=traefik-public-https-redirect
+      - traefik.docker.network=${TRAEFIK_NETWORK}
       - traefik.http.routers.traefik-public-https.rule=Host(`dashboard.$BASE_URL`)
       - traefik.http.routers.traefik-public-https.entrypoints=websecure
       - traefik.http.routers.traefik-public-https.tls=true
@@ -45,6 +39,7 @@ services:
     networks:
       - traefik-network
 
+ ## todo: create dynamic script to generate certs from text file contains a list of domains
   tls:
     container_name: ${PROJECT_NAME}-tls
     build:
@@ -58,4 +53,4 @@ services:
 networks:
   traefik-network:
     external: true
-    name: traefik-network
+    name: ${TRAEFIK_NETWORK}
