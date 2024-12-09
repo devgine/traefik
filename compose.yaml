@@ -2,7 +2,7 @@
 services:
   traefik:
     container_name: ${PROJECT_NAME}-traefik
-    image: traefik:v2.10.5
+    image: traefik:v3.2
     restart: always
     depends_on:
       tls:
@@ -17,7 +17,6 @@ services:
       - --providers.file.directory=/etc/traefik/dynamic_conf
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --entrypoints.mongodb.address=:27017
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
     ports:
@@ -47,6 +46,8 @@ services:
     command:
       - -d
       - ${BASE_URL}
+      - -d
+      - k3s.localhost
     volumes:
       - ./.docker/certs:/certs
 
