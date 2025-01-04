@@ -22,7 +22,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "27017:27017"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./.docker/certs:/certs:ro
@@ -38,11 +37,10 @@ services:
     networks:
       - traefik-network
 
- ## todo: create dynamic script to generate certs from text file contains a list of domains
+  ## todo: create dynamic script to generate certs from text file contains a list of domains
+  ## https://hub.docker.com/r/bitnami/schema-registry
   tls:
-    container_name: ${PROJECT_NAME}-tls
-    build:
-      context: .docker/tls
+    image: ghcr.io/devgine/selfsigned-certificate:1.0.0
     command:
       - -d
       - ${BASE_URL}
